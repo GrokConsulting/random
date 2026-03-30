@@ -70,20 +70,18 @@ $hashFileScript = {
     param([string]$FilePath)
     
     try {
-        $md5 = [System.Security.Cryptography.MD5]::Create()
-        $fileStream = [System.IO.File]::OpenRead($FilePath)
-        $hash = $md5.ComputeHash($fileStream)
-        $fileStream.Close()
-        $hashHex = [System.BitConverter]::ToString($hash).Replace("-", "").ToLower()
-        
+        $hashResult = Get-FileHash -Path $FilePath -Algorithm MD5
+        $hashHex = $hashResult.Hash.ToLower()
+
         $file = Get-Item -Path $FilePath
-        $mtime = [datetime]::new(1970,1,1,0,0,0) + [timespan]::fromseconds(($file.LastWriteTime - [datetime]::new(1970,1,1)).TotalSeconds)
-        
+        $epoch = [datetime]"1970-01-01"
+        $mtimeSeconds = ($file.LastWriteTime - $epoch).TotalSeconds
+
         [PSCustomObject]@{
             filepath = $FilePath
             md5 = $hashHex
             size = $file.Length
-            mtime = ($file.LastWriteTime - [datetime]::new(1970,1,1)).TotalSeconds
+            mtime = $mtimeSeconds
             error = ""
         }
     }
@@ -127,7 +125,7 @@ if ($Filter -ne "*") {
 }
 
 $scanTime = (Get-Date) - $startScan
-Write-Host "Found $($allFiles.Count) files (scan time: $([Math]::Round($scanTime.TotalSeconds, 1))s)" -ForegroundColor Cyan
+Write-Host "Found $($allFiles.Count) files (scan time: $(("{0:F1}" -f $scanTime.TotalSeconds))s)" -ForegroundColor Cyan
 Write-Host ""
 
 # Process files in chunks
@@ -138,7 +136,7 @@ $chunkNum = 0
 
 for ($i = 0; $i -lt $allFiles.Count; $i += $ChunkSize) {
     $chunkNum++
-    $chunk = $allFiles[$i..([Math]::Min($i + $ChunkSize - 1, $allFiles.Count - 1))]
+    $chunk = $allFiles[$i..($i + $ChunkSize - 1)]
     $chunkStartTime = Get-Date
     
     Write-Host "Processing chunk $chunkNum ($($chunk.Count) files)... " -NoNewline -ForegroundColor Yellow
@@ -180,7 +178,7 @@ for ($i = 0; $i -lt $allFiles.Count; $i += $ChunkSize) {
         $csvLine = "$($result.filepath),$($result.md5),$($result.size),$($result.mtime),$($result.error)"
         $csvLine | Out-File -FilePath $OutputFile -Encoding UTF8 -Append
         
-        if ([string]::IsNullOrEmpty($result.error)) {
+        if (-not $result.error) {
             $processedCount++
         } else {
             $errorCount++
@@ -189,21 +187,21 @@ for ($i = 0; $i -lt $allFiles.Count; $i += $ChunkSize) {
     
     # Calculate rate
     $chunkTime = (Get-Date) - $chunkStartTime
-    $rate = if ($chunkTime.TotalSeconds -gt 0) { [Math]::Round($chunk.Count / $chunkTime.TotalSeconds) } else { 0 }
+    $rate = if ($chunkTime.TotalSeconds -gt 0) { [int]($chunk.Count / $chunkTime.TotalSeconds) } else { 0 }
     
     Write-Host "✓ $rate files/sec" -ForegroundColor Green
 }
 
 # Print summary
 $totalTime = (Get-Date) - $startTime
-$totalRate = if ($totalTime.TotalSeconds -gt 0) { [Math]::Round($processedCount / $totalTime.TotalSeconds) } else { 0 }
+$totalRate = if ($totalTime.TotalSeconds -gt 0) { [int]($processedCount / $totalTime.TotalSeconds) } else { 0 }
 
 Write-Host ""
 Write-Host ("=" * 70)
 Write-Host "Processing complete!" -ForegroundColor Green
 Write-Host "Total files hashed: $processedCount"
 Write-Host "Errors: $errorCount"
-Write-Host "Time elapsed: $([Math]::Round($totalTime.TotalSeconds, 1))s"
+Write-Host "Time elapsed: $(("{0:F1}" -f $totalTime.TotalSeconds))s"
 Write-Host "Rate: $totalRate files/sec"
 Write-Host "Output file: $OutputFile"
 Write-Host ("=" * 70)
@@ -212,13 +210,14 @@ Write-Host ("=" * 70)
 $totalSize = 0
 $csv = Import-Csv -Path $OutputFile
 foreach ($row in $csv) {
-    if ([int64]::TryParse($row.size, [ref]$size)) {
+    $size = $row.size -as [int64]
+    if ($size -ne $null) {
         $totalSize += $size
     }
 }
 
 if ($totalSize -gt 0) {
-    $sizeGB = [Math]::Round($totalSize / 1GB, 2)
+    $sizeGB = "{0:F2}" -f ($totalSize / 1GB)
     Write-Host "Total data size: $sizeGB GB"
 }
 
