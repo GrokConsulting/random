@@ -77,22 +77,22 @@ $hashFileScript = {
         $epoch = [datetime]"1970-01-01"
         $mtimeSeconds = ($file.LastWriteTime - $epoch).TotalSeconds
 
-        [PSCustomObject]@{
-            filepath = $FilePath
-            md5 = $hashHex
-            size = $file.Length
-            mtime = $mtimeSeconds
-            error = ""
-        }
+        $obj = New-Object PSObject
+        Add-Member -InputObject $obj -MemberType NoteProperty -Name filepath -Value $FilePath
+        Add-Member -InputObject $obj -MemberType NoteProperty -Name md5      -Value $hashHex
+        Add-Member -InputObject $obj -MemberType NoteProperty -Name size     -Value $file.Length
+        Add-Member -InputObject $obj -MemberType NoteProperty -Name mtime    -Value $mtimeSeconds
+        Add-Member -InputObject $obj -MemberType NoteProperty -Name error    -Value ""
+        $obj
     }
     catch {
-        [PSCustomObject]@{
-            filepath = $FilePath
-            md5 = ""
-            size = ""
-            mtime = ""
-            error = $_.Exception.Message
-        }
+        $obj = New-Object PSObject
+        Add-Member -InputObject $obj -MemberType NoteProperty -Name filepath -Value $FilePath
+        Add-Member -InputObject $obj -MemberType NoteProperty -Name md5      -Value ""
+        Add-Member -InputObject $obj -MemberType NoteProperty -Name size     -Value ""
+        Add-Member -InputObject $obj -MemberType NoteProperty -Name mtime    -Value ""
+        Add-Member -InputObject $obj -MemberType NoteProperty -Name error    -Value $_.Exception.Message
+        $obj
     }
 }
 
