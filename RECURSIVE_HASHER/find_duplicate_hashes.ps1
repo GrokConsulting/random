@@ -108,7 +108,8 @@ foreach ($item in $sortedDupes) {
     # Calculate total size
     $totalSize = 0
     foreach ($file in $files) {
-        if ([int64]::TryParse($file.size, [ref]$size)) {
+        $size = $file.size -as [int64]
+        if ($size -ne $null) {
             $totalSize += $size
         }
     }
@@ -132,7 +133,7 @@ foreach ($item in $sortedDupes) {
     Write-Host ""
     
     # CSV output
-    $fileList = $files.filepath -join " | "
+    $fileList = ($files | ForEach-Object { $_.filepath }) -join " | "
     $outputLines += "`"$md5Hash`",$fileCount,`"$sizeStr`",`"$fileList`""
 }
 
