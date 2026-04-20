@@ -2,6 +2,17 @@
 
 Collection of random scripts - use at peril unless you know what you're actually doing. No warranty and may be destructive.
 
+# JSON TO CSV
+
+Quick tool to convert json files to csv (fully flattened).  Can be run on single files, multiple files or recursively.
+
+**Usage:**
+```bash
+python3 json_to_csv.py file1.json
+python3 json_to_csv.py file1.json file2.json -o outputfile.csv
+python3 json_to_csv.py /path/to/files/* 
+```
+
 ## RECURSIVE_HASHER
 
 Tools for recursively hashing files and finding duplicates.
