@@ -2,6 +2,10 @@
 
 Collection of random scripts - use at peril unless you know what you're actually doing. No warranty and may be destructive.
 
+# Collect_images.sh / Collect_documents.sh
+Pair of quick and dirty shell scripts to be run on Photorec recovered files.  Collect_documents.sh pulls MS Office docs, while Collect_images.sh pulls all .png, .jpg, etc files over an arbritrary size (to reduce the fluff of temporary internet and system files)
+
+
 # JSON TO CSV
 
 Quick tool to convert json files to csv (fully flattened).  Can be run on single files, multiple files or recursively.
